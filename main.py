@@ -8,6 +8,7 @@ session = 'bot'
 
 SOURCE_FOLDER = "Каналы"
 TARGET_CHANNEL = -1001234567890  # замени на свой таргет канал id
+MY_CHANNEL_TAG = "@PayscrowTeamleadBoost"  # твой тег канала
 
 client = TelegramClient(session, api_id, api_hash)
 
@@ -43,11 +44,31 @@ async def handler(event):
         if not is_from_folder:
             return
         
-        # пересылаем в таргет канал
-        await client.send_message(
-            TARGET_CHANNEL,
-            event.message
-        )
+        # получаем инфу о канале-источнике
+        chat = await event.get_chat()
+        chat_title = chat.title if hasattr(chat, 'title') else "Unknown"
+        chat_username = f"@{chat.username}" if hasattr(chat, 'username') and chat.username else ""
+        
+        # формируем хештег
+        hashtag = f"#from_{str(chat_id).replace('-100', '')}"
+        
+        # собираем текст сообщения
+        original_text = event.message.text or ""
+        
+        formatted_text = f"{hashtag}\n{chat_title} {chat_username}\n\n{original_text}\n\n{MY_CHANNEL_TAG}"
+        
+        # пересылаем в таргет канал с медиа если есть
+        if event.message.media:
+            await client.send_message(
+                TARGET_CHANNEL,
+                formatted_text,
+                file=event.message.media
+            )
+        else:
+            await client.send_message(
+                TARGET_CHANNEL,
+                formatted_text
+            )
         
         print(f"✅ переслал с {chat_id}")
         
